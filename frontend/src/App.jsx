@@ -17,8 +17,6 @@ export default function App() {
   // POST /todos
   async function addTodo(e) {
 
-
-    
     e.preventDefault();
     if (!input.trim()) return;
 
