@@ -4,9 +4,17 @@ import models
 from database import Base, engine, get_db
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from schemas import TodoCreate, TodoResponse, TodoUpdate
+from schemas import (
+    ParkingItemCreate,
+    ParkingItemResponse,
+    ParkingItemUpdate,
+    TodoCreate,
+    TodoResponse,
+    TodoUpdate,
+)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from todo_statuses import EisenhowerStatus, TodoStatus
 
 Base.metadata.create_all(bind=engine)
 
@@ -30,10 +38,21 @@ def list_todos(db: Annotated[Session, Depends(get_db)]):
 
 @app.post("/todos", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
 def create_todo(todo_data: TodoCreate, db: Annotated[Session, Depends(get_db)]):
+
+    status = TodoStatus.NOT_STARTED.value
+    eisenhower_status = EisenhowerStatus.NOT_URGENT_NOT_IMPORTANT.value
+
+    if todo_data.status:
+        status = todo_data.status.value
+
+    if todo_data.eisenhower_status:
+        eisenhower_status = todo_data.eisenhower_status.value
+
     todo = models.Todo(
         title=todo_data.title,
-        status="Not_started",
-        eisen_status="urgent_important",
+        status=status,
+        eisenhower_status=eisenhower_status,
+        notes=todo_data.notes,
     )
     db.add(todo)
     db.commit()
@@ -41,17 +60,26 @@ def create_todo(todo_data: TodoCreate, db: Annotated[Session, Depends(get_db)]):
     return todo
 
 
-@app.put("/todos/{todo_id}", response_model=TodoResponse)
-def update_todo(todo_id: int, body: TodoUpdate):
-    pass
-    # for todo in todos:
-    #     if todo.id == todo_id:
-    #         if body.title is not None:
-    #             todo.title = body.title
-    #         if body.completed is not None:
-    #             todo.completed = body.completed
-    #         return todo
-    # raise HTTPException(status_code=404, detail="Todo not found")
+@app.patch("/todos/{todo_id}", response_model=TodoResponse)
+def update_todo(
+    todo_id: int, todo_data: TodoUpdate, db: Annotated[Session, Depends(get_db)]
+):
+    result = db.execute(select(models.Todo).where(models.Todo.id == todo_id))
+    todo = result.scalars().first()
+
+    if not todo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found"
+        )
+
+    update_data = todo_data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(todo, field, value)
+
+    db.commit()
+    db.refresh(todo)
+    return todo
 
 
 @app.delete("/todos/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -64,4 +92,88 @@ def delete_todo(todo_id: int, db: Annotated[Session, Depends(get_db)]):
             status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found"
         )
     db.delete(todo)
+    db.commit()
+
+
+@app.get("/todos/{todo_id}/parking_items", response_model=list[ParkingItemResponse])
+def get_todo_parking_items(todo_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(models.Todo).where(models.Todo.id == todo_id))
+    todo = result.scalars().first()
+
+    if not todo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found"
+        )
+
+    return todo.parking_items
+
+
+@app.post(
+    "/todos/{todo_id}/parking_items",
+    response_model=ParkingItemResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_parking_item(
+    todo_id: int,
+    parking_item_data: ParkingItemCreate,
+    db: Annotated[Session, Depends(get_db)],
+):
+    result = db.execute(select(models.Todo).where(models.Todo.id == todo_id))
+    todo = result.scalars().first()
+
+    if not todo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found"
+        )
+
+    parking_item = models.ParkingItem(
+        description=parking_item_data.description, todo_id=todo.id
+    )
+
+    db.add(parking_item)
+    db.commit()
+    db.refresh(parking_item)
+    return parking_item
+
+
+@app.put(
+    "/parking_items/{parking_item_id}",
+    response_model=ParkingItemResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def update_parking_item(
+    parking_item_id: int,
+    parking_item_data: ParkingItemUpdate,
+    db: Annotated[Session, Depends(get_db)],
+):
+    result = db.execute(
+        select(models.ParkingItem).where(models.ParkingItem.id == parking_item_id)
+    )
+    parking_item = result.scalars().first()
+
+    if not parking_item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Parking item not found"
+        )
+
+    parking_item.description = parking_item_data.description
+
+    db.commit()
+    db.refresh(parking_item)
+    return parking_item
+
+
+@app.delete("/parking_items/{parking_item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_parking_item(parking_item_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(
+        select(models.ParkingItem).where(models.ParkingItem.id == parking_item_id)
+    )
+    parking_item = result.scalars().first()
+
+    if not parking_item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found"
+        )
+
+    db.delete(parking_item)
     db.commit()
