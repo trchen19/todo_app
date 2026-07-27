@@ -3,6 +3,18 @@ import "./App.css";
 
 const API = "http://localhost:8000";
 
+const STATUS_LABELS = {
+  NOT_STARTED: "Not started",
+  IN_PROGRESS: "In progress",
+  COMPLETED: "Completed",
+};
+
+const STATUS_CLASSES = {
+  NOT_STARTED: "status-not-started",
+  IN_PROGRESS: "status-in-progress",
+  COMPLETED: "status-completed",
+};
+
 export default function App() {
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState("");
@@ -30,13 +42,14 @@ export default function App() {
     setInput("");
   }
 
-  // PUT /todos/:id — toggle completed
-  async function toggleTodo(todo) {
+  // PATCH /todos/:id — change status
+  async function updateStatus(todo, status) {
     const res = await fetch(`${API}/todos/${todo.id}`, {
-      method: "PUT",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed: !todo.completed }),
+      body: JSON.stringify({ status }),
     });
+    if (!res.ok) return;
     const updated = await res.json();
     setTodos(todos.map((t) => (t.id === updated.id ? updated : t)));
   }
@@ -62,12 +75,21 @@ export default function App() {
 
       <ul className="todo-list">
         {todos.map((todo) => (
-          <li key={todo.id} className={todo.completed ? "completed" : ""}>
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => toggleTodo(todo)}
-            />
+          <li
+            key={todo.id}
+            className={todo.status === "COMPLETED" ? "completed" : ""}
+          >
+            <select
+              className={`status-select ${STATUS_CLASSES[todo.status] ?? ""}`}
+              value={todo.status}
+              onChange={(e) => updateStatus(todo, e.target.value)}
+            >
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
             <span>{todo.title}</span>
             <button onClick={() => deleteTodo(todo.id)}>Delete</button>
           </li>

@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from database import Base
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from todo_statuses import EisenhowerStatus, TodoStatus
 
 
 class Todo(Base):
@@ -13,12 +12,8 @@ class Todo(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String[200], nullable=False)
-    status: Mapped[str] = mapped_column(
-        String[30], default=TodoStatus.NOT_STARTED.value
-    )
-    eisenhower_status: Mapped[str] = mapped_column(
-        String[30], default=EisenhowerStatus.NOT_URGENT_NOT_IMPORTANT.value
-    )
+    status: Mapped[str] = mapped_column(String[30], nullable=False)
+    eisenhower_status: Mapped[str] = mapped_column(String[30], nullable=False)
     notes: Mapped[str | None] = mapped_column(nullable=True, default=None)
 
     created_date: Mapped[datetime] = mapped_column(

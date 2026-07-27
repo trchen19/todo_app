@@ -14,7 +14,6 @@ from schemas import (
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from todo_statuses import EisenhowerStatus, TodoStatus
 
 Base.metadata.create_all(bind=engine)
 
@@ -39,19 +38,10 @@ def list_todos(db: Annotated[Session, Depends(get_db)]):
 @app.post("/todos", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
 def create_todo(todo_data: TodoCreate, db: Annotated[Session, Depends(get_db)]):
 
-    status = TodoStatus.NOT_STARTED.value
-    eisenhower_status = EisenhowerStatus.NOT_URGENT_NOT_IMPORTANT.value
-
-    if todo_data.status:
-        status = todo_data.status.value
-
-    if todo_data.eisenhower_status:
-        eisenhower_status = todo_data.eisenhower_status.value
-
     todo = models.Todo(
         title=todo_data.title,
-        status=status,
-        eisenhower_status=eisenhower_status,
+        status=todo_data.status,
+        eisenhower_status=todo_data.eisenhower_status,
         notes=todo_data.notes,
     )
     db.add(todo)
@@ -71,6 +61,9 @@ def update_todo(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Todo not found"
         )
+
+    # Note: Doesn't filter out null statuses which would cause an error when committing to db.
+    # Update schema allows nulls in status fields, but db model specifies status columns nullable = False
 
     update_data = todo_data.model_dump(exclude_unset=True)
 

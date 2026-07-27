@@ -15,12 +15,14 @@ body {
   border-radius: 8px;
   padding: 32px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  color-scheme: light; /* card is light-only; stops dark UA form controls */
 }
 
 h1 {
   margin: 0 0 24px;
   font-size: 28px;
   text-align: center;
+  color: #111827; /* index.css sets #f3f4f6 here in dark mode */
 }
 
 .add-form {
@@ -35,6 +37,8 @@ h1 {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
+  background: #fff;
+  color: #111827;
 }
 
 .add-form button {
@@ -77,6 +81,42 @@ h1 {
 .todo-list span {
   flex: 1;
   font-size: 16px;
+}
+
+.todo-list .status-select {
+  min-width: 116px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.todo-list .status-not-started {
+  background: #374151;
+  color: #d1d5db;
+  border-color: #4b5563;
+}
+
+.todo-list .status-in-progress {
+  background: #9a3412;
+  color: #fed7aa;
+  border-color: #c2410c;
+}
+
+.todo-list .status-completed {
+  background: #166534;
+  color: #bbf7d0;
+  border-color: #15803d;
+}
+
+/* The open dropdown inherits the select's dark background otherwise, which would
+   tint all three options the current status's color. */
+.todo-list .status-select option {
+  background: #fff;
+  color: #111827;
+  font-weight: 400;
 }
 
 .todo-list button {

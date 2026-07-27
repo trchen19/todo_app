@@ -23,8 +23,10 @@ class ParkingItemResponse(ParkingItemBase):
 
 class TodoBase(BaseModel):
     title: str = Field(min_length=1, max_length=200)
-    status: TodoStatus
-    eisenhower_status: EisenhowerStatus
+    status: TodoStatus = Field(default=TodoStatus.NOT_STARTED)
+    eisenhower_status: EisenhowerStatus = Field(
+        default=EisenhowerStatus.URGENT_IMPORTANT
+    )
     notes: str | None = Field(default=None, min_length=1)
 
 
@@ -33,7 +35,7 @@ class TodoCreate(TodoBase):
 
 
 class TodoUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=200)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
     status: TodoStatus | None = Field(default=None)
     eisenhower_status: EisenhowerStatus | None = Field(default=None)
     notes: str | None = Field(default=None, min_length=1)
