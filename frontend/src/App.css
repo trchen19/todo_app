@@ -14,10 +14,8 @@
   /* index.css declares `color-scheme: light dark`; without this the OS dark theme
      restyles the native form controls inside this light card. */
   color-scheme: light;
-
+  flex:1;
   box-sizing: border-box;
-  max-width: 1040px;
-  margin: 0 auto;
   padding: 36px 28px 72px;
   text-align: left;
   color: var(--bark);
@@ -146,7 +144,7 @@ body {
 .board {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: auto minmax(190px, 1fr) minmax(190px, 1fr);
+  grid-template-rows: auto minmax(220px, 1fr) minmax(220px, 1fr);
   grid-template-areas:
     ".  xl  xr"
     "yt q1  q2"

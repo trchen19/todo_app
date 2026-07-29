@@ -140,7 +140,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <h1 className="app__title">Triage</h1>
+        <h1 className="app__title">ToDo Workspace</h1>
         <AddTodoForm onAdd={addTodo} />
       </header>
 
