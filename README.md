@@ -1,4 +1,4 @@
-# Eisenhower Todo Workspace: 
+# Eisenhower Todo Workspace 
 
 ## Overview
 
