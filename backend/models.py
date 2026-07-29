@@ -16,6 +16,10 @@ class Todo(Base):
     eisenhower_status: Mapped[str] = mapped_column(String[30], nullable=False)
     notes: Mapped[str | None] = mapped_column(nullable=True, default=None)
 
+    # Rank within an Eisenhower quadrant. Set by PATCH /todos/reorder; ties are
+    # broken by id so rows predating this column still sort predictably.
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
     created_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.now(UTC), nullable=False
     )

@@ -1,100 +1,173 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import * as api from "./api";
+import AddTodoForm from "./components/AddTodoForm";
+import Board from "./components/Board";
 import "./App.css";
 
-const API = "http://localhost:8000";
-
-const STATUS_LABELS = {
-  NOT_STARTED: "Not started",
-  IN_PROGRESS: "In progress",
-  COMPLETED: "Completed",
-};
-
-const STATUS_CLASSES = {
-  NOT_STARTED: "status-not-started",
-  IN_PROGRESS: "status-in-progress",
-  COMPLETED: "status-completed",
-};
+// Positions are only meaningful within a quadrant, but sorting globally by
+// (position, id) keeps each quadrant's filtered order correct, and id breaks ties
+// for rows that share a position.
+const byRank = (a, b) => a.position - b.position || a.id - b.id;
 
 export default function App() {
   const [todos, setTodos] = useState([]);
-  const [input, setInput] = useState("");
+  const [error, setError] = useState(null);
 
-  // Fetch all todos when the component mounts
+  const refetch = useCallback(
+    () =>
+      api
+        .listTodos()
+        .then((data) => {
+          setTodos([...data].sort(byRank));
+          setError(null);
+        })
+        .catch((e) => setError(e.message)),
+    [],
+  );
+
   useEffect(() => {
-    fetch(`${API}/todos`)
-      .then((res) => res.json())
-      .then((data) => setTodos(data));
-  }, []);
+    refetch();
+  }, [refetch]);
 
-  // POST /todos
-  async function addTodo(e) {
-
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const res = await fetch(`${API}/todos`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: input }),
-    });
-    const newTodo = await res.json();
-    setTodos([...todos, newTodo]);
-    setInput("");
+  async function addTodo(title) {
+    try {
+      const created = await api.createTodo(title);
+      setTodos((prev) => [...prev, created].sort(byRank));
+    } catch (e) {
+      setError(e.message);
+    }
   }
 
-  // PATCH /todos/:id — change status
-  async function updateStatus(todo, status) {
-    const res = await fetch(`${API}/todos/${todo.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) return;
-    const updated = await res.json();
-    setTodos(todos.map((t) => (t.id === updated.id ? updated : t)));
+  async function changeStatus(todo, status) {
+    try {
+      const updated = await api.updateTodo(todo.id, { status });
+      setTodos((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    } catch (e) {
+      setError(e.message);
+    }
   }
 
-  // DELETE /todos/:id
-  async function deleteTodo(id) {
-    await fetch(`${API}/todos/${id}`, { method: "DELETE" });
-    setTodos(todos.filter((t) => t.id !== id));
+  async function removeTodo(id) {
+    try {
+      await api.deleteTodo(id);
+      setTodos((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function addParking(todo, description) {
+    try {
+      const item = await api.createParkingItem(todo.id, description);
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === todo.id
+            ? { ...t, parking_items: [...(t.parking_items ?? []), item] }
+            : t,
+        ),
+      );
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function removeParking(todo, itemId) {
+    try {
+      await api.deleteParkingItem(itemId);
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === todo.id
+            ? {
+                ...t,
+                parking_items: (t.parking_items ?? []).filter(
+                  (i) => i.id !== itemId,
+                ),
+              }
+            : t,
+        ),
+      );
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  function onDragEnd({ source, destination, draggableId }) {
+    if (!destination) return;
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    const id = Number(draggableId);
+    const orderedIds = todos
+      .filter((t) => t.eisenhower_status === destination.droppableId && t.id !== id)
+      .map((t) => t.id);
+    orderedIds.splice(destination.index, 0, id);
+
+    // Apply optimistically — without this the card visibly snaps back to its old
+    // slot while the request is in flight.
+    setTodos((prev) =>
+      prev
+        .map((t) => {
+          const rank = orderedIds.indexOf(t.id);
+          return rank === -1
+            ? t
+            : {
+                ...t,
+                eisenhower_status: destination.droppableId,
+                position: rank,
+              };
+        })
+        .sort(byRank),
+    );
+
+    api
+      .reorderTodos(destination.droppableId, orderedIds)
+      .then((updated) => {
+        const authoritative = new Map(updated.map((t) => [t.id, t]));
+        setTodos((prev) =>
+          prev.map((t) => authoritative.get(t.id) ?? t).sort(byRank),
+        );
+      })
+      .catch((e) => {
+        setError(e.message);
+        refetch();
+      });
   }
 
   return (
-    <div className="container">
-      <h1>Todo App</h1>
+    <div className="app">
+      <header className="app__header">
+        <h1 className="app__title">Triage</h1>
+        <AddTodoForm onAdd={addTodo} />
+      </header>
 
-      <form onSubmit={addTodo} className="add-form">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="What needs to be done?"
-        />
-        <button type="submit">Add</button>
-      </form>
+      {error && (
+        <div className="app__error" role="alert">
+          <span>{error}</span>
+          <button className="app__error-dismiss" onClick={() => setError(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
 
-      <ul className="todo-list">
-        {todos.map((todo) => (
-          <li
-            key={todo.id}
-            className={todo.status === "COMPLETED" ? "completed" : ""}
-          >
-            <select
-              className={`status-select ${STATUS_CLASSES[todo.status] ?? ""}`}
-              value={todo.status}
-              onChange={(e) => updateStatus(todo, e.target.value)}
-            >
-              {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <span>{todo.title}</span>
-            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      <Board
+        todos={todos}
+        onDragEnd={onDragEnd}
+        onStatusChange={changeStatus}
+        onDelete={removeTodo}
+        onAddParking={addParking}
+        onDeleteParking={removeParking}
+      />
+
+      {todos.length === 0 && !error && (
+        <p className="app__empty">
+          Nothing on the board. Add a task above — it starts in Do now, and you can
+          drag it wherever it belongs.
+        </p>
+      )}
     </div>
   );
 }

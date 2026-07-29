@@ -9,10 +9,11 @@ from schemas import (
     ParkingItemResponse,
     ParkingItemUpdate,
     TodoCreate,
+    TodoReorder,
     TodoResponse,
     TodoUpdate,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 Base.metadata.create_all(bind=engine)
@@ -30,7 +31,10 @@ app.add_middleware(
 # --- Routes ---
 @app.get("/todos", response_model=list[TodoResponse])
 def list_todos(db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(select(models.Todo))
+    # id breaks ties so ordering stays stable across rows that share a position.
+    result = db.execute(
+        select(models.Todo).order_by(models.Todo.position, models.Todo.id)
+    )
     todos = result.scalars().all()
     return todos
 
@@ -38,16 +42,44 @@ def list_todos(db: Annotated[Session, Depends(get_db)]):
 @app.post("/todos", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
 def create_todo(todo_data: TodoCreate, db: Annotated[Session, Depends(get_db)]):
 
+    # New todos land at the end of the board.
+    highest = db.execute(select(func.max(models.Todo.position))).scalar()
+
     todo = models.Todo(
         title=todo_data.title,
         status=todo_data.status,
         eisenhower_status=todo_data.eisenhower_status,
         notes=todo_data.notes,
+        position=(highest or 0) + 1,
     )
     db.add(todo)
     db.commit()
     db.refresh(todo)
     return todo
+
+
+# Must stay above /todos/{todo_id}: FastAPI matches routes in declaration order, and
+# the parameterised route would otherwise try to parse "reorder" as an int and 422.
+@app.patch("/todos/reorder", response_model=list[TodoResponse])
+def reorder_todos(payload: TodoReorder, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(
+        select(models.Todo).where(models.Todo.id.in_(payload.ordered_ids))
+    )
+    found = {todo.id: todo for todo in result.scalars().all()}
+
+    missing = [todo_id for todo_id in payload.ordered_ids if todo_id not in found]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Todos not found: {missing}"
+        )
+
+    # Every listed id belongs to the target quadrant now, and its index is its rank.
+    for index, todo_id in enumerate(payload.ordered_ids):
+        found[todo_id].position = index
+        found[todo_id].eisenhower_status = payload.eisenhower_status
+
+    db.commit()
+    return [found[todo_id] for todo_id in payload.ordered_ids]
 
 
 @app.patch("/todos/{todo_id}", response_model=TodoResponse)

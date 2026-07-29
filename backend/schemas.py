@@ -41,9 +41,18 @@ class TodoUpdate(BaseModel):
     notes: str | None = Field(default=None, min_length=1)
 
 
+class TodoReorder(BaseModel):
+    """Target quadrant plus its ids in their new order. One request covers both a
+    same-quadrant reorder and a move between quadrants."""
+
+    eisenhower_status: EisenhowerStatus
+    ordered_ids: list[int]
+
+
 class TodoResponse(TodoBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    position: int
     parking_items: list[ParkingItemResponse]
     created_date: datetime

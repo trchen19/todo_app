@@ -1,134 +1,493 @@
-* {
+/* Quiet earth palette — olive and beige, built to be looked at all day.
+   All four quadrants share one field colour; structure comes from the hairline
+   rails and the axis labels, not from tinting. */
+.app {
+  --canvas: #e5e0d1;
+  --panel: #ede8da;
+  --card: #f7f4ec;
+  --olive-9: #3b4226;
+  --olive-6: #6e7650;
+  --line: #cfcbb6;
+  --bark: #2a271f;
+  --muted: #6b6754;
+
+  /* index.css declares `color-scheme: light dark`; without this the OS dark theme
+     restyles the native form controls inside this light card. */
+  color-scheme: light;
+
+  box-sizing: border-box;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 36px 28px 72px;
+  text-align: left;
+  color: var(--bark);
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+
+.app *,
+.app *::before,
+.app *::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #f5f5f5;
+  background: #e5e0d1;
 }
 
-.container {
-  max-width: 480px;
-  margin: 60px auto;
-  background: #fff;
-  border-radius: 8px;
-  padding: 32px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  color-scheme: light; /* card is light-only; stops dark UA form controls */
+.app :focus-visible {
+  outline: 2px solid var(--olive-6);
+  outline-offset: 1px;
 }
 
-h1 {
-  margin: 0 0 24px;
-  font-size: 28px;
-  text-align: center;
-  color: #111827; /* index.css sets #f3f4f6 here in dark mode */
+/* ---- header ---------------------------------------------------------- */
+
+.app__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 26px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.app__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--olive-9);
 }
 
 .add-form {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
+  flex: 1 1 260px;
+  max-width: 420px;
 }
 
-.add-form input {
+.add-form__input {
   flex: 1;
+  min-width: 0;
   padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-  background: #fff;
-  color: #111827;
+  font: inherit;
+  font-size: 14px;
+  color: var(--bark);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
 }
 
-.add-form button {
-  padding: 8px 16px;
-  background: #4f46e5;
-  color: #fff;
+.add-form__input::placeholder {
+  color: var(--muted);
+}
+
+.add-form__button {
+  padding: 8px 18px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--card);
+  background: var(--olive-9);
   border: none;
-  border-radius: 4px;
-  font-size: 16px;
+  border-radius: 3px;
   cursor: pointer;
 }
 
-.add-form button:hover {
-  background: #4338ca;
+.add-form__button:hover {
+  background: var(--olive-6);
 }
 
-.todo-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* ---- error ----------------------------------------------------------- */
+
+.app__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #7c2d12;
+  background: rgba(154, 52, 18, 0.1);
+  border: 1px solid rgba(154, 52, 18, 0.35);
+  border-radius: 3px;
+}
+
+.app__error-dismiss {
+  flex: none;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7c2d12;
+  background: none;
+  border: 1px solid rgba(154, 52, 18, 0.4);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.app__empty {
+  max-width: 44ch;
+  margin: 22px auto 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ---- board ----------------------------------------------------------- */
+
+.board {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(190px, 1fr) minmax(190px, 1fr);
+  grid-template-areas:
+    ".  xl  xr"
+    "yt q1  q2"
+    "yb q3  q4";
+  gap: 10px;
+}
+
+.board__axis {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--olive-6);
+}
+
+.board__axis--x {
+  align-self: end;
+  padding-bottom: 2px;
+}
+
+.board__axis--xl {
+  grid-area: xl;
+}
+
+.board__axis--xr {
+  grid-area: xr;
+}
+
+.board__axis--y {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  place-self: center;
+  white-space: nowrap;
+}
+
+.board__axis--yt {
+  grid-area: yt;
+}
+
+.board__axis--yb {
+  grid-area: yb;
+}
+
+/* ---- quadrant -------------------------------------------------------- */
+
+.quadrant {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.quadrant--q1 {
+  grid-area: q1;
+}
+
+.quadrant--q2 {
+  grid-area: q2;
+}
+
+.quadrant--q3 {
+  grid-area: q3;
+}
+
+.quadrant--q4 {
+  grid-area: q4;
+}
+
+.quadrant__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.quadrant__action {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--olive-9);
+}
+
+.quadrant__axes {
+  display: none;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.quadrant__cards {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 56px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 3px;
 }
 
-.todo-list li {
+.quadrant__cards.is-over {
+  background: rgba(110, 118, 80, 0.09);
+  outline: 1px dashed var(--olive-6);
+  outline-offset: 2px;
+}
+
+/* ---- card ------------------------------------------------------------ */
+
+.card {
+  padding: 9px 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  cursor: grab;
+}
+
+.card--dragging {
+  border-color: var(--olive-6);
+  box-shadow: 0 8px 20px rgba(59, 66, 38, 0.2);
+}
+
+.card__top {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 4px;
+  align-items: flex-start;
+  gap: 8px;
 }
 
-.todo-list li.completed span {
-  text-decoration: line-through;
-  color: #aaa;
-}
-
-.todo-list span {
+.card__title {
   flex: 1;
-  font-size: 16px;
+  font-size: 14px;
+  color: var(--bark);
+  overflow-wrap: anywhere;
 }
 
-.todo-list .status-select {
-  min-width: 116px;
-  padding: 4px 8px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
+.card--done .card__title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.card__delete {
+  flex: none;
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 2px;
   cursor: pointer;
 }
 
-.todo-list .status-not-started {
+.card__delete:hover {
+  color: #9a3412;
+  background: rgba(154, 52, 18, 0.09);
+}
+
+.card__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.card__parking-toggle {
+  margin-left: auto;
+  padding: 2px 5px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.card__parking-toggle:hover {
+  color: var(--olive-9);
+  background: rgba(110, 118, 80, 0.13);
+}
+
+/* ---- status badge — colours deliberately unchanged -------------------- */
+
+.status-select {
+  padding: 3px 7px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.status-not-started {
   background: #374151;
   color: #d1d5db;
   border-color: #4b5563;
 }
 
-.todo-list .status-in-progress {
+.status-in-progress {
   background: #9a3412;
   color: #fed7aa;
   border-color: #c2410c;
 }
 
-.todo-list .status-completed {
+.status-completed {
   background: #166534;
   color: #bbf7d0;
   border-color: #15803d;
 }
 
-/* The open dropdown inherits the select's dark background otherwise, which would
-   tint all three options the current status's color. */
-.todo-list .status-select option {
+/* Without this the open dropdown inherits the badge's dark background and tints
+   all three options with the current status's colour. */
+.status-select option {
   background: #fff;
   color: #111827;
   font-weight: 400;
 }
 
-.todo-list button {
-  padding: 4px 10px;
-  background: #fee2e2;
-  color: #dc2626;
+/* ---- parking items --------------------------------------------------- */
+
+.parking {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+
+.parking__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 7px;
+  padding: 0;
+  list-style: none;
+}
+
+.parking__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.parking__item span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.parking__remove {
+  flex: none;
+  padding: 1px 3px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
   border: none;
-  border-radius: 4px;
-  font-size: 13px;
   cursor: pointer;
 }
 
-.todo-list button:hover {
-  background: #fecaca;
+.parking__remove:hover {
+  color: #9a3412;
+}
+
+.parking__form {
+  display: flex;
+  gap: 5px;
+}
+
+.parking__input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 7px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--bark);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.parking__input::placeholder {
+  color: var(--muted);
+}
+
+.parking__add {
+  flex: none;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--olive-9);
+  background: transparent;
+  border: 1px solid var(--olive-6);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.parking__add:hover {
+  background: rgba(110, 118, 80, 0.14);
+}
+
+/* ---- responsive ------------------------------------------------------ */
+
+@media (max-width: 720px) {
+  .app {
+    padding: 24px 16px 56px;
+  }
+
+  .board {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      "q1"
+      "q2"
+      "q3"
+      "q4";
+  }
+
+  /* The rails have nowhere to sit in one column, so each quadrant names its own
+     axes instead. */
+  .board__axis {
+    display: none;
+  }
+
+  .quadrant__axes {
+    display: inline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app *,
+  .app *::before,
+  .app *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
