@@ -31,7 +31,16 @@ export default function App() {
 
   async function addTodo(title) {
     try {
-      const created = await api.createTodo(title);
+      const created = await api.createTodo({title});
+      setTodos((prev) => [...prev, created].sort(byRank));
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function addEmptyTodo(title, eisenhowerStatus) {
+    try {
+      const created = await api.createTodo({title, eisenhower_status: eisenhowerStatus});
       setTodos((prev) => [...prev, created].sort(byRank));
     } catch (e) {
       setError(e.message);
@@ -158,6 +167,7 @@ export default function App() {
         onDragEnd={onDragEnd}
         onStatusChange={changeStatus}
         onDelete={removeTodo}
+        onAddTodo={addEmptyTodo}
         onAddParking={addParking}
         onDeleteParking={removeParking}
       />

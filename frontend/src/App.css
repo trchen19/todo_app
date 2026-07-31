@@ -276,6 +276,24 @@ body {
   outline-offset: 2px;
 }
 
+.quadrant__add {
+  margin-left: auto;
+  padding: 0px 6px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.quadrant__add:hover {
+  color: var(--card);
+  background: var(--olive-6);
+}
+
 /* ---- card ------------------------------------------------------------ */
 
 .card {

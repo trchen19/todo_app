@@ -15,8 +15,8 @@ async function request(path, options = {}) {
 
 export const listTodos = () => request("/todos");
 
-export const createTodo = (title) =>
-  request("/todos", { method: "POST", body: JSON.stringify({ title }) });
+export const createTodo = (newtask) =>
+  request("/todos", { method: "POST", body: JSON.stringify(newtask) });
 
 export const updateTodo = (id, patch) =>
   request(`/todos/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
