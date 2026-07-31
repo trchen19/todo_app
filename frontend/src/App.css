@@ -14,9 +14,17 @@
   /* index.css declares `color-scheme: light dark`; without this the OS dark theme
      restyles the native form controls inside this light card. */
   color-scheme: light;
-  flex:1;
+  flex: 1;
+  /* Owns the height #root hands down, so the board can claim what's left under
+     the header instead of sizing itself to its cards. #root's `min-height` is
+     only a floor — without a cap here a crowded quadrant grows the page instead
+     of scrolling itself. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100svh;
   box-sizing: border-box;
-  padding: 36px 28px 72px;
+  padding: 36px 28px 28px;
   text-align: left;
   color: var(--bark);
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
@@ -141,10 +149,16 @@ body {
 
 /* ---- board ----------------------------------------------------------- */
 
+/* The board is a fixed workspace: the two card rows split the height left over
+   after the axis labels, so quadrant size reads as the matrix, not as how many
+   cards happen to be in one. A `1fr` floor here would push the page into
+   scrolling on a short window — overflow goes inside `.quadrant__cards`. */
 .board {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: auto minmax(220px, 1fr) minmax(220px, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
     ".  xl  xr"
     "yt q1  q2"
@@ -194,6 +208,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   padding: 12px;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -239,12 +254,16 @@ body {
   color: var(--muted);
 }
 
+/* The one place overflow is allowed to go: a crowded quadrant scrolls itself and
+   leaves the other three alone. @hello-pangea/dnd runs its drag auto-scroll
+   against the droppable element when that element is the scroll container. */
 .quadrant__cards {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 56px;
+  min-height: 0;
+  overflow-y: auto;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -458,9 +477,13 @@ body {
 @media (max-width: 720px) {
   .app {
     padding: 24px 16px 56px;
+    max-height: none;
   }
 
+  /* Four stacked quadrants, so "fill the viewport" stops meaning anything — back
+     to natural flow, with the page doing the scrolling again. */
   .board {
+    flex: none;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     grid-template-areas:
@@ -468,6 +491,11 @@ body {
       "q2"
       "q3"
       "q4";
+  }
+
+  .quadrant__cards {
+    min-height: 56px;
+    overflow-y: visible;
   }
 
   /* The rails have nowhere to sit in one column, so each quadrant names its own
